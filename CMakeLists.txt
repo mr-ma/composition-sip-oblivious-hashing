@@ -10,6 +10,11 @@ include_directories(${LLVM_INCLUDE_DIRS})
 include_directories(${INPUT_DEP_INCLUDE_DIR})
 include_directories(${CMAKE_CURRENT_LIST_DIR})
 
+if ($ENV{CLION_IDE})
+	include_directories("/usr/include/llvm-c-3.9/")
+	include_directories("/usr/include/llvm-3.9/")
+endif ()
+
 link_directories(${LLVM_LIBRARY_DIRS})
 link_directories(${INPUT_DEP_LIB_DIR})
 link_directories(${CMAKE_CURRENT_BINARY_DIR})
