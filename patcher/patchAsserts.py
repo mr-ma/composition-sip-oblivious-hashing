@@ -11,7 +11,7 @@ def patch_binary(orig_name, new_name):
     #orig_name = sys.argv[1]
     #new_name = sys.argv[2]
     e = ELF(orig_name)
-    result = subprocess.check_output(["gdb", orig_name, "-x", "/home/sip/sip-oblivious-hashing/assertions/gdb_script.txt"]).decode("utf-8")
+    result = subprocess.check_output(["gdb", orig_name, "-x", "/home/dennis/sip-oblivious-hashing/assertions/gdb_script.txt"]).decode("utf-8")
     lines = result.splitlines()
     print result
     if "segmentation fault" in result.lower() or "bus error" in result.lower():
@@ -57,6 +57,7 @@ def main():
         import json
         from pprint import pprint 
         oh_stats =json.load(open(results.oh_stats_file))
+        pprint(oh_stats)
         assert_count = int(oh_stats["numberOfAssertCalls"])
     else: 
         assert_count = results.assert_count
