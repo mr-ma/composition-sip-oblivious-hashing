@@ -42,7 +42,7 @@ bool skipFunction(llvm::Function& F,
     if (F.isDeclaration() || F.isIntrinsic()) {
         return true;
     }
-    if (function_filter_info->get_functions().size() != 0 && !function_filter_info->is_function(&F)) {
+    if (function_filter_info->getFunctions().size() != 0 && !function_filter_info->is_function(&F)) {
         llvm::dbgs() << " Skipping function per FilterFunctionPass:" << F.getName() << "\n";
         return true;
     }
@@ -99,7 +99,7 @@ bool canInsertAssertionAtLocation(llvm::Function& F,
     if (loop != nullptr) {
         return false;
     }
-    if (!function_info->get_functions().empty() && function_info->is_function(&F)) {
+    if (!function_info->getFunctions().empty() && function_info->is_function(&F)) {
         llvm::dbgs() << "InsertLogger skipped function:" << F.getName()
                      << " because it is in the skip assert list!\n";
         return false;
@@ -540,12 +540,12 @@ bool ObliviousHashInsertionPass::runOnModule(llvm::Module &M) {
   }
   hashPtrs.reserve(num_hash);
   input_dependency_info = getAnalysis<input_dependency::InputDependencyAnalysisPass>().getInputDependencyAnalysis();
-  const auto &function_info = getAnalysis<FunctionMarkerPass>().get_functions_info();
+  const auto &function_info = getAnalysis<FunctionMarkerPass>().getFunctionsInfo();
   llvm::dbgs() << "Recieved marked functions "
-               << function_info->get_functions().size() << "\n";
-  const auto &function_filter_info = getAnalysis<FunctionFilterPass>().get_functions_info();
+               << function_info->getFunctions().size() << "\n";
+  const auto &function_filter_info = getAnalysis<FunctionFilterPass>().getFunctionsInfo();
   llvm::dbgs() << "Recieved filter functions "
-               << function_filter_info->get_functions().size() << "\n";
+               << function_filter_info->getFunctions().size() << "\n";
   const auto &function_callsite_data = getAnalysis<FunctionCallSiteInformationPass>().getAnalysisResult();
 
   int countProcessedFuncs = 0;
@@ -605,11 +605,11 @@ bool ObliviousHashInsertionPass::runOnModule(llvm::Module &M) {
   }
 
   // Make sure OH only processed filter function list
-  if (countProcessedFuncs != function_filter_info->get_functions().size() &&
-      function_filter_info->get_functions().size() > 0) {
+  if (countProcessedFuncs != function_filter_info->getFunctions().size() &&
+      function_filter_info->getFunctions().size() > 0) {
     errs() << "ERR. processed " << countProcessedFuncs
            << " function, while filter count is "
-           << function_filter_info->get_functions().size() << "\n";
+           << function_filter_info->getFunctions().size() << "\n";
     //exit(1);
   }
   //  dbgs()<<"runOnModule is done\n";
