@@ -9,6 +9,7 @@ find_package(Boost REQUIRED)
 find_package(input-dependency REQUIRED COMPONENTS InputDependency)
 find_package(llvm-dg REQUIRED)
 find_package(self-checksumming REQUIRED)
+find_package(composition-framework REQUIRED)
 
 add_library(oblivious-hashing MODULE
         include/oblivious-hashing/AssertFunctionMarkPass.h
@@ -48,7 +49,7 @@ if ($ENV{CLION_IDE})
     include_directories("/usr/include/llvm-c-6.0/")
 endif ()
 
-target_compile_features(oblivious-hashing PRIVATE cxx_range_for cxx_auto_type)
+target_compile_features(oblivious-hashing PRIVATE cxx_range_for cxx_auto_type cxx_std_17)
 target_compile_options(oblivious-hashing PRIVATE -fno-rtti)
 
 target_link_libraries(oblivious-hashing
