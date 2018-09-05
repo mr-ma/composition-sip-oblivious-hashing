@@ -15,6 +15,8 @@
 #include <set>
 #include <vector>
 
+#include "composition/Analysis.hpp"
+
 namespace llvm {
 class AAResults;
 class BasicBlock;
@@ -35,7 +37,7 @@ namespace oh {
 class FunctionCallSiteData;
 class OHPath;
 
-class ObliviousHashInsertionPass : public llvm::ModulePass {
+class ObliviousHashInsertionPass : public llvm::ModulePass, public composition::ComposableAnalysis<ObliviousHashInsertionPass> {
 private:
   using BasicBlocksSet = std::unordered_set<llvm::BasicBlock*>;
   using InstructionSet = std::unordered_set<llvm::Instruction*>;
@@ -155,7 +157,7 @@ private:
                                                       llvm::LoopInfo& LI);
   bool is_value_short_range_hashed(llvm::Value* value) const;
   bool is_value_global_hashed(llvm::Value* value) const;
-  bool insertHash(llvm::Instruction &I, llvm::Value *v, llvm::Value* hash_value, bool before);
+  bool insertHash(llvm::Instruction &I, llvm::Value *v, llvm::Value* hash_value, bool before, bool isLocal);
   bool instrumentInst(llvm::Instruction& I, llvm::Value* hash_to_update, bool is_local_hash);
   bool instrumentBranchInst(llvm::BranchInst* branchInst,
                             llvm::Value* hash_to_update,
@@ -163,9 +165,10 @@ private:
   template <class CallInstTy>
   bool instrumentCallInst(CallInstTy* call,
                           int& protectedArguments,
-                          llvm::Value* hash_value);
-  bool instrumentGetElementPtrInst(llvm::GetElementPtrInst* getElemPtr, llvm::Value* hash_value);
-  bool instrumentCmpInst(llvm::CmpInst* I, llvm::Value* hash_value);
+                          llvm::Value* hash_value,
+                          bool isLocal);
+  bool instrumentGetElementPtrInst(llvm::GetElementPtrInst* getElemPtr, llvm::Value* hash_value, bool isLocal);
+  bool instrumentCmpInst(llvm::CmpInst* I, llvm::Value* hash_value, bool isLocal);
   void insertAssert(llvm::Instruction &I,
                     llvm::Value* hash_value,
                     bool short_range_assert,
