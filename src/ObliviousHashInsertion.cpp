@@ -2840,14 +2840,14 @@ bool ObliviousHashInsertionPass::runOnModule(llvm::Module& M)
     //llvm::dbgs() << "Dump instrumented module\n";
     //M.dump();
 
-    dbgs() << m_assert_manifests.size() << "\n";
     for(auto [a, h] : m_assert_hash_values) {
         auto m1 = m_assert_manifests.at(a);
         auto ms = m_manifest_hash_values.at(h);
-        dbgs() << ms.size() << "\n";
 
+        m1->Clean();
         for(auto m2 : ms) {
-            for (auto u : m2->undoValues) {
+            m2->Clean();
+            for (auto u : m2->UndoValues()) {
                 m1->constraints.push_back(std::make_shared<Dependency>(m1->name, a, u, true));
             }
         }
