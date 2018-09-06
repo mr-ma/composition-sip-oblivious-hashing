@@ -352,7 +352,7 @@ void insertHashBuilder(llvm::IRBuilder<> &builder,
     if(isLocal) {
         name = "sroh_hash";
     } else {
-        name = "oh_hash_" + std::to_string(reinterpret_cast<uintptr_t>(hash_value));
+        name = "oh_hash_";// + std::to_string(reinterpret_cast<uintptr_t>(hash_value));
     }
 
     std::vector<std::shared_ptr<Constraint>> constraints{};
@@ -1433,8 +1433,7 @@ void ObliviousHashInsertionPass::doInsertAssert(llvm::Instruction &instr,
     }
     ArrayRef<Value *> args(values);
     assertCnt++;
-    // Stats add the assert call
-    short_range_assert ? stats.addNumberOfShortRangeAssertCalls(1) : stats.addNumberOfAssertCalls(1);
+
     auto* assertCall = builder.CreateCall(assert_F, args);
     assertCall->setMetadata("oh_assert", assert_metadata);
 
@@ -1443,11 +1442,12 @@ void ObliviousHashInsertionPass::doInsertAssert(llvm::Instruction &instr,
     if(short_range_assert) {
         name = "sroh_assert";
     } else {
-        name = "oh_assert_" + std::to_string(reinterpret_cast<uintptr_t>(hash_value));
+        name = "oh_assert_";// + std::to_string(reinterpret_cast<uintptr_t>(hash_value));
     }
 
-    auto patchFunction = [](const Manifest &m) {
-
+    auto patchFunction = [short_range_assert, this](const Manifest &m) {
+      // Stats add the assert call
+      short_range_assert ? stats.addNumberOfShortRangeAssertCalls(1) : stats.addNumberOfAssertCalls(1);
     };
 
     std::vector<std::shared_ptr<Constraint>> constraints{};
