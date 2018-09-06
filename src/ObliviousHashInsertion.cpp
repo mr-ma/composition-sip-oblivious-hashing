@@ -53,6 +53,10 @@ namespace oh {
 
 namespace {
 
+std::unordered_map<llvm::CallInst*, composition::Manifest*> m_assert_manifests{};
+std::unordered_map<llvm::Value*, std::vector<composition::Manifest*>> m_manifest_hash_values{};
+std::unordered_map<llvm::CallInst*, llvm::Value*> m_assert_hash_values{};
+
 bool checkTerminators(llvm::Module& M)
 {
     for (auto& F : M) {
@@ -353,7 +357,7 @@ void insertHashBuilder(llvm::IRBuilder<> &builder,
     if(isLocal) {
         name = "sroh_hash";
     } else {
-        name = "oh_hash_" + std::to_string(hash_value->getValueID());
+        name = "oh_hash_" + std::to_string(reinterpret_cast<uintptr_t>(hash_value));
     }
 
     std::vector<std::shared_ptr<Constraint>> constraints{};
@@ -375,6 +379,8 @@ void insertHashBuilder(llvm::IRBuilder<> &builder,
 
     auto* m = new Manifest(name, v, patchFunction, constraints, true, undoValues, guardInstructions);
     ManifestRegistry::Add(std::shared_ptr<Manifest>(m));
+
+    m_manifest_hash_values[hash_value].push_back(m);
 }
 
 class FunctionExtractionHelper
@@ -1463,7 +1469,7 @@ void ObliviousHashInsertionPass::doInsertAssert(llvm::Instruction &instr,
     if(short_range_assert) {
         name = "sroh_assert";
     } else {
-        name = "oh_assert_" + std::to_string(hash_value->getValueID());
+        name = "oh_assert_" + std::to_string(reinterpret_cast<uintptr_t>(hash_value));
     }
 
     auto patchFunction = [](const Manifest &m) {
@@ -1472,16 +1478,17 @@ void ObliviousHashInsertionPass::doInsertAssert(llvm::Instruction &instr,
 
     std::vector<std::shared_ptr<Constraint>> constraints{};
 
-
-
     undoValues.insert(assertCall);
     undoValues.insert(const_int);
     std::set<llvm::Instruction*> guardValues{};
     guardValues.insert(assertCall);
 
-    auto* m = new Manifest(name, hash_value, patchFunction, constraints, true, undoValues, guardValues);
+    auto* m = new Manifest(name, &instr, patchFunction, constraints, true, undoValues, guardValues);
 
     addProtection(std::shared_ptr<Manifest>(m));
+
+    m_assert_hash_values.insert({assertCall, hash_value});
+    m_assert_manifests.insert({assertCall, m});
 }
 
 void ObliviousHashInsertionPass::setup_guardMe_metadata()
@@ -2832,6 +2839,19 @@ bool ObliviousHashInsertionPass::runOnModule(llvm::Module& M)
     //}
     //llvm::dbgs() << "Dump instrumented module\n";
     //M.dump();
+
+    dbgs() << m_assert_manifests.size() << "\n";
+    for(auto [a, h] : m_assert_hash_values) {
+        auto m1 = m_assert_manifests.at(a);
+        auto ms = m_manifest_hash_values.at(h);
+        dbgs() << ms.size() << "\n";
+
+        for(auto m2 : ms) {
+            for (auto u : m2->undoValues) {
+                m1->constraints.push_back(std::make_shared<Dependency>(m1->name, a, u, true));
+            }
+        }
+    }
 
     if (!DumpOHStat.empty()) {
         dbgs() << "OH stats is requested, dumping stat file...\n";
