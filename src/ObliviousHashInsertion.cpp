@@ -2821,12 +2821,6 @@ bool ObliviousHashInsertionPass::runOnModule(llvm::Module& M)
         }
     }
 
-    if (!DumpOHStat.empty()) {
-        dbgs() << "OH stats is requested, dumping stat file...\n";
-        stats.dumpJson(DumpOHStat);
-        //stats.verify(m_input_dependency_info);
-    }
-
     // Make sure OH only processed filter function list
     if (countProcessedFuncs != m_function_filter_info->get_functions().size()
         && m_function_filter_info->get_functions().size() > 0) {
@@ -2835,6 +2829,16 @@ bool ObliviousHashInsertionPass::runOnModule(llvm::Module& M)
                      << m_function_filter_info->get_functions().size() << "\n";
     }
     return modified;
+}
+
+bool ObliviousHashInsertionPass::doFinalization(Module &module) {
+  if (!DumpOHStat.empty()) {
+    dbgs() << "OH stats is requested, dumping stat file...\n";
+    stats.dumpJson(DumpOHStat);
+    //stats.verify(m_input_dependency_info);
+  }
+
+  return ModulePass::doFinalization(module);
 }
 
 static llvm::RegisterPass<ObliviousHashInsertionPass>

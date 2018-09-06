@@ -67,6 +67,7 @@ public:
 
   bool runOnModule(llvm::Module &M) override;
   virtual void getAnalysisUsage(llvm::AnalysisUsage &AU) const override;
+  bool doFinalization(llvm::Module &module) override;
 
 private:
   // TODO: cleanup functions. Remove those not used
