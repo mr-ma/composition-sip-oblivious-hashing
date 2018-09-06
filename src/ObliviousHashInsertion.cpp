@@ -1352,7 +1352,7 @@ bool ObliviousHashInsertionPass::instrumentCallInst(CallInstTy* call,
     } else if (!isHashableFunction(called_function)) {
        m_function_skipped_instructions[call->getParent()->getParent()].insert(call);
     } else {
-        hashInserted |= insertHash(*call, call, hash_value, false);
+        hashInserted |= insertHash(*call, call, hash_value, false, isLocal);
     }
     return hashInserted;
 }
