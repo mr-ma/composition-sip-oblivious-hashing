@@ -4,44 +4,47 @@ import argparse
 import mmap
 import re
 from shutil import copyfile
+
+
 def match_placeholders(console_reads):
     address = r'.*? \#\d+ [ ]+ (0(?:[a-z][a-z]*[0-9]+[a-z0-9]*)) .*? in [ ]+ ((?:[a-z][a-z0-9_]*)) .*?\n'
     computed = r'\$\d+ .*? (-?\d+) .*?\n'
     placeholder = r'\$\d+ .*? (\d+) .*?\n'
 
-    rg = re.compile(address+computed+placeholder,re.IGNORECASE|re.MULTILINE|re.VERBOSE|re.DOTALL)
+    rg = re.compile(address + computed + placeholder, re.IGNORECASE | re.MULTILINE | re.VERBOSE | re.DOTALL)
     matchobj = rg.findall(console_reads)
     return matchobj
 
-def patch_binary(orig_name, new_name,debug, args, script):
-    patch_map ={}
-    expected_hashes={}
-    #e = ELF(orig_name)
-    #result = subprocess.check_output(["gdb", orig_name, "-x", "/home/anahitik/SIP/sip-oblivious-hashing/assertions/gdb_script.txt"]).decode("utf-8")
-    #cmd = ["gdb", orig_name, "-x", "/home/sip/sip-oblivious-hashing/assertions/gdb_script.txt"]
+
+def patch_binary(orig_name, new_name, debug, args, script):
+    patch_map = {}
+    expected_hashes = {}
+    # e = ELF(orig_name)
+    # result = subprocess.check_output(["gdb", orig_name, "-x", "/home/anahitik/SIP/sip-oblivious-hashing/assertions/gdb_script.txt"]).decode("utf-8")
+    # cmd = ["gdb", orig_name, "-x", "/home/sip/sip-oblivious-hashing/assertions/gdb_script.txt"]
     cmd = ["gdb", orig_name, "-x", script]
-    if args !='' and args.strip()!='':
-        #set_args = "\'set args"
-        #set_args += args
-        #set_args += "\'"
-        #cmd = ["gdb", "-ex", eval(set_args), "-x", script, orig_name]
+    if args != '' and args.strip() != '':
+        # set_args = "\'set args"
+        # set_args += args
+        # set_args += "\'"
+        # cmd = ["gdb", "-ex", eval(set_args), "-x", script, orig_name]
         if '>' in args or '<' in args:
             set_args = "\'set args"
             set_args += args
             set_args += "\'"
             cmd = ["gdb", "-ex", eval(set_args), "-x", script, orig_name]
-        else :
-            args_splitted = args.split();
-            cmd = ["gdb","-x", script,'--args',orig_name]
+        else:
+            args_splitted = args.split()
+            cmd = ["gdb", "-x", script, '--args', orig_name]
             cmd.extend(args_splitted)
     print cmd
     result = subprocess.check_output(cmd).decode("utf-8")
-    #print result
+    # print result
     shrtnd_result = ""
     for line in result.splitlines():
         if line.startswith('#') or line.startswith('$'):
-             shrtnd_result += line+"\n"
-    #print shrtnd_result
+            shrtnd_result += line + "\n"
+    # print shrtnd_result
     print "gdb ran. Parsing results"
     tuples = match_placeholders(shrtnd_result)
     for info in tuples:
@@ -52,46 +55,47 @@ def patch_binary(orig_name, new_name,debug, args, script):
         print ("Computed " + info[3] + " " + info[2])
         fld_instr = int(address, 16) - 20
         expected_hashes[placeholder] = (computed, fld_instr, function)
-    #exit(1)
-    #lines = result.splitlines()
-    #print result
+    # exit(1)
+    # lines = result.splitlines()
+    # print result
     if "segmentation fault" in result.lower() or "bus error" in result.lower():
         print "GDB patcher segmentation fault detected..."
         exit(1)
-    #hasFirstLine = False
-    #isThirdLine = False
-    #placeholder=""
-    #expected_hash = 0
+    # hasFirstLine = False
+    # isThirdLine = False
+    # placeholder=""
+    # expected_hash = 0
 
-    #for line in lines:
-     #   if debug:
-      #      print line
-       # if line.startswith("#1"):
-        #    words = line.split()
-         #   fld_instr = int(words[1], 16) - 20
-          #  function = words[3]
-           # hasFirstLine = True
-       # if hasFirstLine and line.startswith("$"):
-        #    words = line.split()
-         #   if isThirdLine:
-          #      placeholder = words[2]
-           #     hasFirstLine = isThirdLine = False
-            #    expected_hashes[placeholder] = (expected_hash, fld_instr, function)
-           # else:
-            #    try:
-	#	    expected_hash = int(words[2])
-         #           isThirdLine = True
-	#	except TypeError:
-	#	    print 'ERR. Type error expected hash reading from a bad line {}'.format(line)
-         #           break
-        #else:
-         #   hasFirstLine = False
+    # for line in lines:
+    #   if debug:
+    #      print line
+    # if line.startswith("#1"):
+    #    words = line.split()
+    #   fld_instr = int(words[1], 16) - 20
+    #  function = words[3]
+    # hasFirstLine = True
+    # if hasFirstLine and line.startswith("$"):
+    #    words = line.split()
+    #   if isThirdLine:
+    #      placeholder = words[2]
+    #     hasFirstLine = isThirdLine = False
+    #    expected_hashes[placeholder] = (expected_hash, fld_instr, function)
+    # else:
+    #    try:
+    #	    expected_hash = int(words[2])
+    #           isThirdLine = True
+    #	except TypeError:
+    #	    print 'ERR. Type error expected hash reading from a bad line {}'.format(line)
+    #           break
+    # else:
+    #   hasFirstLine = False
 
-    #print expected_hashes
-    #exit(1)
-    #e.save(new_name)
-    copyfile(orig_name,new_name);
+    # print expected_hashes
+    # exit(1)
+    # e.save(new_name)
+    copyfile(orig_name, new_name)
     return expected_hashes
+
 
 def find_placeholder(mm, search_bytes):
     addr = mm.find(search_bytes)
@@ -100,9 +104,12 @@ def find_placeholder(mm, search_bytes):
     addr = mm.find(search_bytes)
     return addr
 
+
 def patch_address(mm, addr, patch_value):
-    mm.seek(addr,os.SEEK_SET)
+    mm.seek(addr, os.SEEK_SET)
     mm.write(patch_value)
+
+
 def patch_placeholders(filename, placeholders, debug):
     print "patching placeholders"
     with open(filename, 'r+b') as f:
@@ -113,90 +120,122 @@ def patch_placeholders(filename, placeholders, debug):
             if debug:
                 print 'Seeking to placeholder ' + placeholder + ' with expected hash ' + str(expected_hash)
             search_bytes = struct.pack("<q", long(placeholder))
-            address =0
+            address = 0
             patch_value = struct.pack("<q", expected_hash)
             if debug:
                 print 'patch value ' + bytes(patch_value)
             address = find_placeholder(mm, search_bytes)
             if address == -1:
                 print str(placeholder) + ' placeholder not found'
-            else :
+            else:
                 patch_count = patch_count + 1
-            while address!=-1:
+            while address != -1:
                 if debug:
-                    print 'Found placeholder '+placeholder+' at ' + hex(address) + ' trying to patch it with ' + str(expected_hash)
-                patch_address(mm,address,patch_value)
+                    print 'Found placeholder ' + placeholder + ' at ' + hex(
+                        address) + ' trying to patch it with ' + str(expected_hash)
+                patch_address(mm, address, patch_value)
                 address = find_placeholder(mm, search_bytes)
         return patch_count
 
+
 def get_function_info(file_name, function_name):
-	import r2pipe
-	r2 = r2pipe.open(file_name)
-	#find addresses and sizes of all functions
-	r2.cmd("aa")
-	function_list = r2.cmdj("aflj")
-	found_func = filter(lambda function:  function['name'] == 'sym.'+function_name,function_list)
-	if len(found_func)>0:
-                address = r2.cmd("?p "+str(found_func[0]['offset']))
-		return int(address,16), found_func[0]['size']
-	return -1,-1
-def patch_block(file_name,address, size):
+    import r2pipe
+    r2 = r2pipe.open(file_name)
+    # find addresses and sizes of all functions
+    r2.cmd("aa")
+    function_list = r2.cmdj("aflj")
+    found_func = filter(lambda function: function['name'] == 'sym.' + function_name, function_list)
+    if len(found_func) > 0:
+        address = r2.cmd("?p " + str(found_func[0]['offset']))
+        return int(address, 16), found_func[0]['size']
+    return -1, -1
+
+
+def patch_block(file_name, address, size):
     nop_list = []
-    for i in range(size-1):
+    for i in range(size - 1):
         nop_list.append(0x90)
-    nop_bytes = struct.pack('B'*len(nop_list),*nop_list)
-    print "Noping {} bytes @ {}".format(len(nop_bytes),hex(address))
+    nop_bytes = struct.pack('B' * len(nop_list), *nop_list)
+    print "Noping {} bytes @ {}".format(len(nop_bytes), hex(address))
     with open(file_name, 'r+b') as f:
         mm = mmap.mmap(f.fileno(), 0)
-        mm.seek(address,os.SEEK_SET)
+        mm.seek(address, os.SEEK_SET)
         mm.write(nop_bytes)
+
+
 def patch_function(file_name):
     function_name = "oh_path_functions"
-    #find the address and size of the function in the binary
-    address, size = get_function_info(file_name,function_name)
-    print " oh_path_functions @"+hex(address),"  length:", str(size) 
-    if size>1:
-        patch_block(file_name,address, size)
+    # find the address and size of the function in the binary
+    address, size = get_function_info(file_name, function_name)
+    print " oh_path_functions @" + hex(address), "  length:", str(size)
+    if size > 1:
+        patch_block(file_name, address, size)
     else:
         print 'No functions to NOP'
+
+
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('-b',action='store', dest='binary', help='Binary name to patch using GDB')
-    parser.add_argument('-n',action='store', dest='new_binary', help='Output new binary name after patching')
-    parser.add_argument('-a',action='store', dest='assert_count', help='Number of patches to be verified at the end of the process',required=False,type=int)
-    parser.add_argument('-d',action='store', dest='debug', help='Print debug messages',required=False,type=bool, default=False)
-    parser.add_argument('-s',action='store', dest='oh_stats_file', help='OH stats file to get the number of patches to be verified at the end of the process',required=False)
-    parser.add_argument('-g',action='store', dest='args', required= False, type=str,default='',help='Running arguments to the program to patch')
-    parser.add_argument('-p', action='store', dest='script', required= False, type=str,
+    parser.add_argument('-b', action='store', dest='binary', help='Binary name to patch using GDB')
+    parser.add_argument('-n', action='store', dest='new_binary', help='Output new binary name after patching')
+    parser.add_argument('-a', action='store', dest='assert_count',
+                        help='Number of patches to be verified at the end of the process', required=False, type=int)
+    parser.add_argument('-d', action='store', dest='debug', help='Print debug messages', required=False, type=bool,
+                        default=False)
+    parser.add_argument('-s', action='store', dest='oh_stats_file',
+                        help='OH stats file to get the number of patches to be verified at the end of the process',
+                        required=False)
+    parser.add_argument('-g', action='store', dest='args', required=False, type=str, default='',
+                        help='Running arguments to the program to patch')
+    parser.add_argument('-p', action='store', dest='script', required=False, type=str,
                         default='/home/sip/sip-oblivious-hashing/assertions/gdb_script.txt',
-                        #default='/home/anahitik/SIP/sip-oblivious-hashing/assertions/gdb_script.txt',
                         help='gdb script to use when performing patching')
+    parser.add_argument('-f', action='store', dest='finalize', help='Finalize binary by removing oh_path_functions',
+                        required=False, type=bool, default=False)
+    parser.add_argument('-m', action='store', dest='placeholders', help='Defines placeholders to be patched.', type=str,
+                        default='')
 
     results = parser.parse_args()
-    placeholders = patch_binary(results.binary,results.new_binary, results.debug,results.args, results.script)
-    count_patched = patch_placeholders(results.new_binary,placeholders, results.debug)
-    print "Patched:",count_patched," in ",results.new_binary," saved as:",results.new_binary
+    placeholders = patch_binary(results.binary, results.new_binary, results.debug, results.args, results.script)
+
+    if len(results.placeholders) > 0:
+        with open(results.placeholders) as f:
+            patch_info = [line.rstrip('\n') for line in f]
+
+        result = {}
+        for t in patch_info:
+            result[t] = placeholders[t]
+
+        placeholders = result
+
+    count_patched = patch_placeholders(results.new_binary, placeholders, results.debug)
+    print "Patched:", count_patched, " in ", results.new_binary, " saved as:", results.new_binary
     for placeholder in placeholders:
-        print 'Placeholder ' + str(placeholder) + ' expected has ' + hex(placeholders[placeholder][0]) + ' address ' + hex(placeholders[placeholder][1]) + ' function ' + placeholders[placeholder][2]
-    assert_count =0
+        print 'Placeholder ' + str(placeholder) + ' expected has ' + hex(
+            placeholders[placeholder][0]) + ' address ' + hex(placeholders[placeholder][1]) + ' function ' + \
+              placeholders[placeholder][2]
+    assert_count = 0
     if results.oh_stats_file:
         import json
-        from pprint import pprint 
-        oh_stats =json.load(open(results.oh_stats_file))
+        from pprint import pprint
+        oh_stats = json.load(open(results.oh_stats_file))
         assert_count = int(oh_stats["numberOfAssertCalls"])
         assert_count = assert_count + int(oh_stats["numberOfShortRangeAssertCalls"])
-    else: 
+    else:
         assert_count = results.assert_count
 
-    if assert_count>0:
-        #Verify that the number of patches is equal to the number of asserts in the binary
+    if assert_count > 0:
+        # Verify that the number of patches is equal to the number of asserts in the binary
         if count_patched != assert_count:
-            print 'WARNING. Some asserts are not patched! Patched=',count_patched," Asserts=",assert_count
-            #exit(1)
+            print 'WARNING. Some asserts are not patched! Patched=', count_patched, " Asserts=", assert_count
+            # exit(1)
         else:
-            print 'Info. Patched=',count_patched," Asserts=",assert_count
+            print 'Info. Patched=', count_patched, " Asserts=", assert_count
 
-    ##NOP oh_path_functions
-    patch_function(results.new_binary)
+    if results.finalize:
+        ##NOP oh_path_functions
+        patch_function(results.new_binary)
+
+
 if __name__ == "__main__":
     main()
