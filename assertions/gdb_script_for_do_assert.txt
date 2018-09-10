@@ -1,4 +1,4 @@
-set exec-wrapper env LD_PRELOAD="/home/dennis/composition-framework/build/librtlib.so"
+set exec-wrapper env LD_PRELOAD="/home/dennis/Desktop/composition-framework/cmake-build-debug/librtlib.so"
 set breakpoint pending on
 b response
 commands

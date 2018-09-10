@@ -203,6 +203,8 @@ def main():
             patch_info = [line.rstrip('\n') for line in f]
 
         result = {}
+        import pprint
+        pprint.pprint(placeholders)
         for t in patch_info:
             result[t] = placeholders[t]
 
