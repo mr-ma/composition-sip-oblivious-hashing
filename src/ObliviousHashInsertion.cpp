@@ -370,7 +370,7 @@ void insertHashBuilder(llvm::IRBuilder<> &builder,
     };
 
     auto* m = new Manifest(name, v, patchFunction, constraints, false, undoValues, guardInstructions);
-    ManifestRegistry::Add(std::shared_ptr<Manifest>(m));
+    ManifestRegistry::Add(m);
 }
 
 class FunctionExtractionHelper
@@ -1464,7 +1464,7 @@ void ObliviousHashInsertionPass::doInsertAssert(llvm::Instruction &instr,
 
     auto* m = new Manifest(name, &instr, patchFunction, constraints, true, undoValues, guardValues, std::to_string(placeholder)+"\n");
 
-    addProtection(std::shared_ptr<Manifest>(m));
+    addProtection(m);
 }
 
 void ObliviousHashInsertionPass::setup_guardMe_metadata()
@@ -2810,20 +2810,6 @@ bool ObliviousHashInsertionPass::runOnModule(llvm::Module& M)
     //llvm::dbgs() << "Dump instrumented module\n";
     //M.dump();
 
-    /*
-    for(auto [a, h] : m_assert_hash_values) {
-        auto m1 = m_assert_manifests.at(a);
-        auto ms = m_manifest_hash_values.at(h);
-
-        m1->Clean();
-        for(auto m2 : ms) {
-            m2->Clean();
-            for (auto u : m2->UndoValues()) {
-                m1->constraints.push_back(std::make_shared<Dependency>(m1->name, a, u, true));
-            }
-        }
-    }
-     */
 
     // Make sure OH only processed filter function list
     if (countProcessedFuncs != m_function_filter_info->get_functions().size()
