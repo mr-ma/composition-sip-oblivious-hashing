@@ -29,7 +29,7 @@ def patch_binary(orig_name, new_name, debug, args, script):
         # set_args += "\'"
         # cmd = ["gdb", "-ex", eval(set_args), "-x", script, orig_name]
         if '>' in args or '<' in args:
-            set_args = "\'set args"
+            set_args = "\'set args "
             set_args += args
             set_args += "\'"
             cmd = ["gdb", "-ex", eval(set_args), "-x", script, orig_name]
