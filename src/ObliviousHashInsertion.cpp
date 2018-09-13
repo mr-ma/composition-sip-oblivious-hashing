@@ -1421,7 +1421,7 @@ void ObliviousHashInsertionPass::insertAssert(llvm::Instruction &I,
     }
     if (short_range_assert) {
         doInsertAssert(I, hash_to_assert, true, assert_F);
-    } else if (get_random(2)) {
+    } else {
         // insert randomly
         doInsertAssert(I, hash_to_assert, false, assert_F);
     }
