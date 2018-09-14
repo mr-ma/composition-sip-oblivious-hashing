@@ -6,10 +6,15 @@ import mmap
 import re
 from shutil import copyfile
 import os
+try:
+    from subprocess import DEVNULL # py3k
+except ImportError:
+    import os
+    DEVNULL = open(os.devnull, 'wb')
 
 
 def match_placeholders(console_reads):
-    placeholderRegex = r'\$(\d+)\$(\d+)\$'
+    placeholderRegex = r'\$(-?\d+)\$(\d+)\$'
 
     rg = re.compile(placeholderRegex, re.IGNORECASE | re.MULTILINE | re.VERBOSE | re.DOTALL)
     matchobj = rg.findall(console_reads)
@@ -19,21 +24,33 @@ def match_placeholders(console_reads):
 def patch_binary(orig_name, new_name, args):
     expected_hashes = {}
 
+    ldpreload = ["/home/dennis/Desktop/self-checksumming/hook/build/libminm.so",
+                 "/home/dennis/Desktop/composition-framework/cmake-build-debug/librtlib.so"]
     env = os.environ.copy()
-    env[
-        'LD_PRELOAD'] = "/home/dennis/Desktop/self-checksumming/hook/build/libminm.so:/home/dennis/Desktop/composition-framework/cmake-build-debug/librtlib.so"
+    env['LD_PRELOAD'] = ":".join(ldpreload)
     cmd = [orig_name]
+    stdin = None
     if args != '' and args.strip() != '':
         # set_args = "\'set args"
         # set_args += args
         # set_args += "\'"
         # cmd = ["gdb", "-ex", eval(set_args), "-x", script, orig_name]
         args_splitted = args.split()
+        use_next_as_stdin = False
         for arg in args_splitted:
-            cmd.append(arg.replace("\"", ""))
+            if arg.startswith('<'):
+                use_next_as_stdin = True
+            elif use_next_as_stdin:
+                stdin = open(arg.strip(), 'rb')
+            else:
+                cmd.append(arg.replace("\"", ""))
 
-    result = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=env).communicate()[0]
-    #print(result)
+    result = subprocess.Popen(cmd,
+                              stdin=stdin,
+                              stdout=DEVNULL,
+                              stderr=subprocess.PIPE,
+                              env=env).communicate()[1]
+    print(result)
     shrtnd_result = ""
     for line in result.splitlines():
         if line.startswith('#') or line.startswith('$'):
@@ -96,6 +113,7 @@ def get_function_info(file_name, function_name):
     r2 = r2pipe.open(file_name)
     # find addresses and sizes of all functions
     r2.cmd("aa")
+    r2.cmd("aac")
     function_list = r2.cmdj("aflj")
     found_func = filter(lambda function: function['name'] == 'sym.' + function_name, function_list)
     if len(found_func) > 0:
@@ -149,7 +167,7 @@ def main():
                         default='')
 
     results = parser.parse_args()
-    placeholders = patch_binary(results.binary, results.new_binary, results.args)
+    placeholders = patch_binary(results.binary, results.new_binary, results.args.strip("\""))
 
     if len(results.placeholders) > 0:
         with open(results.placeholders) as f:
