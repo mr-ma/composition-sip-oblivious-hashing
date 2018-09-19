@@ -2831,10 +2831,6 @@ bool ObliviousHashInsertionPass::runOnModule(llvm::Module& M)
             modified = true;
         }
     }
-    if (shortRangeOH) {
-        extract_path_functions();
-        insert_calls_for_path_functions();
-    }
 
     //if (!checkTerminators(M)) {
     //    exit(1);
@@ -2851,6 +2847,13 @@ bool ObliviousHashInsertionPass::runOnModule(llvm::Module& M)
                      << m_function_filter_info->get_functions().size() << "\n";
     }
     return modified;
+}
+
+void ObliviousHashInsertionPass::finalizeComposition() {
+    if (shortRangeOH) {
+        extract_path_functions();
+        insert_calls_for_path_functions();
+    }
 }
 
 bool ObliviousHashInsertionPass::doFinalization(Module &module) {

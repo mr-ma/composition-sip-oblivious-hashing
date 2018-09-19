@@ -37,7 +37,7 @@ namespace oh {
 class FunctionCallSiteData;
 class OHPath;
 
-class ObliviousHashInsertionPass : public llvm::ModulePass, public composition::ComposableAnalysis<ObliviousHashInsertionPass> {
+class ObliviousHashInsertionPass : public composition::ComposableAnalysis<ObliviousHashInsertionPass> {
 private:
   using BasicBlocksSet = std::unordered_set<llvm::BasicBlock*>;
   using InstructionSet = std::unordered_set<llvm::Instruction*>;
@@ -63,11 +63,12 @@ public:
 public:
   static char ID;
 
-  ObliviousHashInsertionPass() : llvm::ModulePass(ID) {}
+  ObliviousHashInsertionPass() = default;
 
   bool runOnModule(llvm::Module &M) override;
   virtual void getAnalysisUsage(llvm::AnalysisUsage &AU) const override;
   bool doFinalization(llvm::Module &module) override;
+  void finalizeComposition() override;
 
 private:
   // TODO: cleanup functions. Remove those not used
