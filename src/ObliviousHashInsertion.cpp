@@ -353,7 +353,7 @@ void insertHashBuilder(llvm::IRBuilder<> &builder,
     if(isLocal) {
         name = "sroh_hash";
     } else {
-        name = "oh_hash_";// + std::to_string(reinterpret_cast<uintptr_t>(hash_value));
+        name = "oh_hash";// + std::to_string(reinterpret_cast<uintptr_t>(hash_value));
     }
 
     std::vector<std::shared_ptr<Constraint>> constraints{};
@@ -1464,7 +1464,7 @@ void ObliviousHashInsertionPass::doInsertAssert(llvm::Instruction &instr,
     if(short_range_assert) {
         name = "sroh_assert";
     } else {
-        name = "oh_assert_";// + std::to_string(reinterpret_cast<uintptr_t>(hash_value));
+        name = "oh_assert";// + std::to_string(reinterpret_cast<uintptr_t>(hash_value));
     }
 
     auto patchFunction = [short_range_assert, this](const Manifest &m) {
@@ -1488,7 +1488,7 @@ void ObliviousHashInsertionPass::doInsertAssert(llvm::Instruction &instr,
     std::set<llvm::Instruction*> guardValues{};
     guardValues.insert(assertCall);
 
-    auto* m = new Manifest(name, &instr, patchFunction, constraints, true, undoValues, guardValues, std::to_string(placeholder)+"\n");
+    auto* m = new Manifest(name, nullptr, patchFunction, constraints, true, undoValues, guardValues, std::to_string(placeholder)+"\n");
 
     addProtection(m);
 }
@@ -2182,7 +2182,9 @@ bool ObliviousHashInsertionPass::process_path(llvm::Function* F,
     // means no short range assertion has been added for the path
     // TODO: have current oh path as a member variable as working with m_function_oh_paths is confusing
     if (!oh_path.path_assert) {
+        local_store->replaceAllUsesWith(UndefValue::get(local_store->getType()));
         local_store->eraseFromParent();
+        local_hash->replaceAllUsesWith(UndefValue::get(local_hash->getType()));
         local_hash->eraseFromParent();
         m_function_oh_paths[F].pop_back();
     } else {
