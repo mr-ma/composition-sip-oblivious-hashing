@@ -124,8 +124,7 @@ private:
                      const SkipFunctionsPred& skipInstructionPred,
                      bool& local_hash_updated,
                      InstructionSet& skipped_instructions,
-                     bool hash_branches,
-                     bool is_local_hash);
+                     bool hash_branches);
   bool isUsingGlobal(llvm::Value* value,
                      const std::unordered_set<llvm::Instruction*>& global_reachable_instr);
   bool isNullReachable(llvm::Function* F, llvm::Value* value);
