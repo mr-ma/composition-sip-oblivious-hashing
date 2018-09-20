@@ -1202,7 +1202,7 @@ bool ObliviousHashInsertionPass::instrumentInst(llvm::Instruction &I,
                 if (!val) {
                     continue;
                 }
-                if (is_value_short_range_hashed(val) || is_value_global_hashed(val)) {
+                if ((is_local_hash && is_value_short_range_hashed(val)) || (!is_local_hash && is_value_global_hashed(val))) {
                     is_local_hash ? m_shortRangeHashedValues.insert(&I) : m_globalHashedValues.insert(&I);
                     is_local_hash ? stats.addShortRangeProtectedInstruction(&I) : stats.addOhProtectedInstruction(&I);
                 } else {
@@ -1605,11 +1605,13 @@ bool ObliviousHashInsertionPass::process_function(llvm::Function* F)
     llvm::dbgs() << " Processing function:" << F->getName() << "\n";
     stats.addNumberOfSensitiveBlocks(F->getBasicBlockList().size());
     stats.addSensitiveInstructions(F);
+    bool changed = false;
     if (shortRangeOH) {
         llvm::dbgs() << "Short range hashing enabled.\n";
-        return process_function_with_short_range_oh_enabled(F);
+        changed = process_function_with_short_range_oh_enabled(F);
     }
-    return process_function_with_global_oh(F);
+    changed |= process_function_with_global_oh(F);
+    return changed;
 }
 
 bool ObliviousHashInsertionPass::process_function_with_short_range_oh_enabled(llvm::Function* F)
@@ -1632,10 +1634,11 @@ bool ObliviousHashInsertionPass::process_function_with_global_oh(llvm::Function*
 {
     bool modified = false;
     auto F_input_dependency_info = m_input_dependency_info->getAnalysisInfo(F);
-    if (F_input_dependency_info->isInputDepFunction()) {
+/*    if (F_input_dependency_info->isInputDepFunction()) {
         llvm::dbgs() << "Skip input dependent function " << F->getName() << "\n";
         return modified;
     }
+    */
     llvm::LoopInfo &LI = getAnalysis<llvm::LoopInfoWrapperPass>(*F).getLoopInfo();
     for (auto& B : *F) {
         if (F_input_dependency_info->isInputDependentBlock(&B)) {
@@ -1648,7 +1651,7 @@ bool ObliviousHashInsertionPass::process_function_with_global_oh(llvm::Function*
         bool dummy_flag = false;
         modified |= process_block(F, &B, nullptr, can_insert_assertions,
                                   [] (llvm::Instruction* instr) {return false;},
-                                  dummy_flag, skipped_instructions, false);
+                                  dummy_flag, skipped_instructions, false, false);
     }
     return modified;
 }
@@ -2126,7 +2129,7 @@ bool ObliviousHashInsertionPass::process_path(llvm::Function* F,
                 modified |= process_block(F, B, local_hash, can_insert_assertions,
                                           deterministic_skip_instruction_pred,
                                           local_hash_updated, skipped_instructions,
-                                          (oh_path.loop == nullptr) || oh_path.hash_invariants_only);
+                                          (oh_path.loop == nullptr) || oh_path.hash_invariants_only, true);
             }
         } else {
             insert_assertion = (B == oh_path.exit_block);
@@ -2206,7 +2209,7 @@ bool ObliviousHashInsertionPass::process_deterministic_part_of_path(llvm::Functi
                 bool dummy_flag = false;
                 modified |= process_block(F, B, nullptr, can_insert_assertions,
                                           deterministic_skip_instruction_pred, dummy_flag,
-                                          skipped_instructions, false);
+                                          skipped_instructions, false, true);
             }
         }
     }
@@ -2350,7 +2353,8 @@ bool ObliviousHashInsertionPass::process_block(llvm::Function* F, llvm::BasicBlo
                                                const SkipFunctionsPred& skipInstructionPred,
                                                bool& local_hash_updated,
                                                InstructionSet& skipped_instructions,
-                                               bool hash_branches)
+                                               bool hash_branches,
+                                               bool is_local_hash)
 {
     bool modified = false;
     auto F_input_dependency_info = m_input_dependency_info->getAnalysisInfo(F);
@@ -2372,7 +2376,7 @@ bool ObliviousHashInsertionPass::process_block(llvm::Function* F, llvm::BasicBlo
         unsigned index = get_random(num_hash);
         usedHashIndices.push_back(index);
         llvm::Value* hash_to_update = hashPtrs.at(index);
-        m_hashUpdated |= instrumentInst(I, hash_to_update, false);
+        m_hashUpdated |= instrumentInst(I, hash_to_update, is_local_hash);
         modified |= m_hashUpdated;
         if (!insert_assert || !m_hashUpdated || usedHashIndices.empty()) {
             llvm::dbgs() << "Insert assertion skipped because there was no hash "
