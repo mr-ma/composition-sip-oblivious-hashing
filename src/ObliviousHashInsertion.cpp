@@ -2751,7 +2751,8 @@ bool ObliviousHashInsertionPass::runOnModule(llvm::Module& M)
     llvm::dbgs() << "Insert hash computation\n";
     assertCnt = 1;
     bool modified = false;
-    srand(time(NULL));
+    //srand(time(NULL));
+    srand(0);
     m_M = &M;
     if (shortRangeOH) {
         m_slicer.reset(new Slicer(m_M));
