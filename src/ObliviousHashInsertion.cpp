@@ -45,6 +45,8 @@
 #include "input-dependency/Analysis/ReachableFunctions.h"
 
 #include "composition/Manifest.hpp"
+#include "composition/graph/constraint.hpp"
+#include "composition/graph/dependency.hpp"
 
 using namespace llvm;
 using namespace composition;
@@ -356,17 +358,15 @@ void insertHashBuilder(llvm::IRBuilder<> &builder,
         name = "oh_hash";// + std::to_string(reinterpret_cast<uintptr_t>(hash_value));
     }
 
-    std::vector<std::shared_ptr<Constraint>> constraints{};
+    std::vector<std::shared_ptr<graph::Constraint>> constraints{};
     std::set<llvm::Value*> undoValues{};
-    std::set<llvm::Instruction*> guardInstructions{};
 
-    constraints.push_back(std::make_shared<Dependency>(name, cast, load));
+    constraints.push_back(std::make_shared<graph::Dependency>(name, cast, load));
     undoValues.insert(call);
     undoValues.insert(cast);
-    guardInstructions.insert(call);
     if(load != v) {
-      constraints.push_back(std::make_shared<Dependency>(name, load, v));
-      constraints.push_back(std::make_shared<Dependency>(name, hash_value, call));
+      constraints.push_back(std::make_shared<graph::Dependency>(name, load, v));
+      constraints.push_back(std::make_shared<graph::Dependency>(name, hash_value, call));
       undoValues.insert(load);
     }
 
@@ -374,7 +374,7 @@ void insertHashBuilder(llvm::IRBuilder<> &builder,
 
     };
 
-    auto* m = new Manifest(name, v, patchFunction, constraints, false, undoValues, guardInstructions);
+    auto* m = new Manifest(name, v, patchFunction, constraints, false, undoValues);
     ManifestRegistry::Add(m);
 }
 
@@ -1472,23 +1472,21 @@ void ObliviousHashInsertionPass::doInsertAssert(llvm::Instruction &instr,
       short_range_assert ? stats.addNumberOfShortRangeAssertCalls(1) : stats.addNumberOfAssertCalls(1);
     };
 
-    std::vector<std::shared_ptr<Constraint>> constraints{};
+    std::vector<std::shared_ptr<graph::Constraint>> constraints{};
 
     if(short_range_assert) {
-        constraints.push_back(std::make_shared<Dependency>(name, *undoValues.begin(), hash_value));
-        constraints.push_back(std::make_shared<Dependency>(name, assertCall, *undoValues.begin()));
+        constraints.push_back(std::make_shared<graph::Dependency>(name, *undoValues.begin(), hash_value));
+        constraints.push_back(std::make_shared<graph::Dependency>(name, assertCall, *undoValues.begin()));
     } else {
-        constraints.push_back(std::make_shared<Dependency>(name, assertCall, hash_value));
+        constraints.push_back(std::make_shared<graph::Dependency>(name, assertCall, hash_value));
     }
-    constraints.push_back(std::make_shared<Dependency>(name, assertCall, const_int));
+    constraints.push_back(std::make_shared<graph::Dependency>(name, assertCall, const_int));
 
 
     undoValues.insert(assertCall);
     undoValues.insert(const_int);
-    std::set<llvm::Instruction*> guardValues{};
-    guardValues.insert(assertCall);
 
-    auto* m = new Manifest(name, nullptr, patchFunction, constraints, true, undoValues, guardValues, std::to_string(placeholder)+"\n");
+    auto* m = new Manifest(name, nullptr, patchFunction, constraints, true, undoValues, std::to_string(placeholder)+"\n");
 
     addProtection(m);
 }

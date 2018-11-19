@@ -15,7 +15,7 @@
 #include <set>
 #include <vector>
 
-#include "composition/Analysis.hpp"
+#include "composition/support/Analysis.hpp"
 
 namespace llvm {
 class AAResults;
@@ -37,7 +37,7 @@ namespace oh {
 class FunctionCallSiteData;
 class OHPath;
 
-class ObliviousHashInsertionPass : public composition::ComposableAnalysis<ObliviousHashInsertionPass> {
+class ObliviousHashInsertionPass : public composition::support::ComposableAnalysis<ObliviousHashInsertionPass> {
 private:
   using BasicBlocksSet = std::unordered_set<llvm::BasicBlock*>;
   using InstructionSet = std::unordered_set<llvm::Instruction*>;
