@@ -45,8 +45,8 @@
 #include "input-dependency/Analysis/ReachableFunctions.h"
 
 #include "composition/Manifest.hpp"
-#include "composition/graph/constraint.hpp"
-#include "composition/graph/dependency.hpp"
+#include "composition/graph/constraint/constraint.hpp"
+#include "composition/graph/constraint/dependency.hpp"
 
 using namespace llvm;
 using namespace composition;
@@ -330,18 +330,43 @@ void insertHashBuilder(llvm::IRBuilder<> &builder,
     llvm::LLVMContext &Ctx = builder.getContext();
     llvm::Value *cast = nullptr;
     llvm::Value *load = nullptr;
+
+    std::vector<std::shared_ptr<graph::constraint::Constraint>> constraints{};
+    std::set<llvm::Value*> undoValues{};
+
+    //Create the manifest to get the information into the framework
+    std::string name;
+    if(isLocal) {
+      name = "sroh_hash";
+    } else {
+      name = "oh_hash";// + std::to_string(reinterpret_cast<uintptr_t>(hash_value));
+    }
+
     if (v->getType()->isPointerTy()) {
         load = builder.CreateLoad(v);
+        constraints.push_back(std::make_shared<graph::constraint::Dependency>(name, load, v));
+        undoValues.insert(load);
+
+        assert(v != load);
     } else {
         load = v;
     }
 
     if (load->getType()->isIntegerTy()) {
         cast = builder.CreateZExtOrBitCast(load, llvm::Type::getInt64Ty(Ctx));
+
+        if(load != cast) {
+          constraints.push_back(std::make_shared<graph::constraint::Dependency>(name, cast, load));
+          undoValues.insert(cast);
+        }
     } else if (load->getType()->isFloatingPointTy()) {
         cast = builder.CreateFPToSI(load, llvm::Type::getInt64Ty(Ctx));
+        constraints.push_back(std::make_shared<graph::constraint::Dependency>(name, cast, load));
+        undoValues.insert(cast);
+
+        assert(load != cast);
     } else {
-        assert("false");
+        llvm_unreachable("false");
     }
     std::vector<llvm::Value *> arg_values;
     arg_values.push_back(hash_value);
@@ -349,30 +374,13 @@ void insertHashBuilder(llvm::IRBuilder<> &builder,
     llvm::ArrayRef<llvm::Value *> args(arg_values);
 
     auto call = builder.CreateCall(hashFunc, args);
-
-    //Create the manifest to get the information into the framework
-    std::string name;
-    if(isLocal) {
-        name = "sroh_hash";
-    } else {
-        name = "oh_hash";// + std::to_string(reinterpret_cast<uintptr_t>(hash_value));
-    }
-
-    std::vector<std::shared_ptr<graph::Constraint>> constraints{};
-    std::set<llvm::Value*> undoValues{};
-
-    constraints.push_back(std::make_shared<graph::Dependency>(name, cast, load));
+    constraints.push_back(std::make_shared<graph::constraint::Dependency>(name, hash_value, call));
+    constraints.push_back(std::make_shared<graph::constraint::Dependency>(name, hash_value, cast));
     undoValues.insert(call);
-    undoValues.insert(cast);
-    if(load != v) {
-      constraints.push_back(std::make_shared<graph::Dependency>(name, load, v));
-      constraints.push_back(std::make_shared<graph::Dependency>(name, hash_value, call));
-      undoValues.insert(load);
-    }
 
-    auto patchFunction = [](const Manifest &m) {
+    assert(hash_value != call);
 
-    };
+    auto patchFunction = [](const Manifest &m) {};
 
     auto* m = new Manifest(name, v, patchFunction, constraints, false, undoValues);
     ManifestRegistry::Add(m);
@@ -1472,15 +1480,15 @@ void ObliviousHashInsertionPass::doInsertAssert(llvm::Instruction &instr,
       short_range_assert ? stats.addNumberOfShortRangeAssertCalls(1) : stats.addNumberOfAssertCalls(1);
     };
 
-    std::vector<std::shared_ptr<graph::Constraint>> constraints{};
+    std::vector<std::shared_ptr<graph::constraint::Constraint>> constraints{};
 
     if(short_range_assert) {
-        constraints.push_back(std::make_shared<graph::Dependency>(name, *undoValues.begin(), hash_value));
-        constraints.push_back(std::make_shared<graph::Dependency>(name, assertCall, *undoValues.begin()));
+        constraints.push_back(std::make_shared<graph::constraint::Dependency>(name, *undoValues.begin(), hash_value));
+        constraints.push_back(std::make_shared<graph::constraint::Dependency>(name, assertCall, *undoValues.begin()));
     } else {
-        constraints.push_back(std::make_shared<graph::Dependency>(name, assertCall, hash_value));
+        constraints.push_back(std::make_shared<graph::constraint::Dependency>(name, assertCall, hash_value));
     }
-    constraints.push_back(std::make_shared<graph::Dependency>(name, assertCall, const_int));
+    constraints.push_back(std::make_shared<graph::constraint::Dependency>(name, assertCall, const_int));
 
 
     undoValues.insert(assertCall);
@@ -2781,7 +2789,7 @@ bool ObliviousHashInsertionPass::runOnModule(llvm::Module& M)
     llvm::dbgs() << "Insert hash computation\n";
     assertCnt = 1;
     bool modified = false;
-    srand(time(NULL));
+    //srand(time(NULL));
     m_M = &M;
     if (shortRangeOH) {
         m_slicer.reset(new Slicer(m_M));

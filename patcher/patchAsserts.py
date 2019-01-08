@@ -25,7 +25,7 @@ def patch_binary(orig_name, new_name, args):
     expected_hashes = {}
 
     ldpreload = ["/home/dennis/Desktop/self-checksumming/hook/build/libminm.so",
-                 "/home/dennis/Desktop/composition-framework/cmake-build-debug/librtlib.so"]
+                 "/home/dennis/Desktop/composition-framework/build/librtlib.so"]
     env = os.environ.copy()
     env['LD_PRELOAD'] = ":".join(ldpreload)
     cmd = [orig_name]
