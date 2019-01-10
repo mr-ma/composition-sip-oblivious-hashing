@@ -1,7 +1,6 @@
 #include "oblivious-hashing/ObliviousHashInsertion.h"
 #include "oblivious-hashing/FunctionCallSitesInformation.h"
 #include "oblivious-hashing/Utils.h"
-
 #include "llvm/Analysis/LoopInfo.h"
 #include "llvm/Analysis/AliasAnalysis.h"
 #include "llvm/Analysis/AssumptionCache.h"
@@ -26,8 +25,6 @@
 #include "llvm/Transforms/Utils/ValueMapper.h"
 #include "llvm/Transforms/Utils/Cloning.h"
 #include "llvm/Transforms/Utils/BasicBlockUtils.h"
-
-
 #include <assert.h>
 #include <boost/algorithm/string/classification.hpp> // Include boost::for is_any_of
 #include <boost/algorithm/string/split.hpp>          // Include for boost::split
@@ -37,13 +34,10 @@
 #include <iterator>
 #include <sstream>
 #include <string>
-
-#include "self-checksumming/FunctionFilter.h"
-#include "self-checksumming/FunctionMarker.h"
-
+#include "function-filter/Filter.hpp"
+#include "function-filter/Marker.hpp"
 #include "input-dependency/Analysis/FunctionInputDependencyResultInterface.h"
 #include "input-dependency/Analysis/ReachableFunctions.h"
-
 #include "composition/Manifest.hpp"
 #include "composition/graph/constraint/constraint.hpp"
 #include "composition/graph/constraint/dependency.hpp"

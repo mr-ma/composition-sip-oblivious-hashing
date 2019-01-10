@@ -2,7 +2,6 @@
 
 #include "oblivious-hashing/Stats.h"
 #include "input-dependency/Analysis/InputDependencyAnalysisPass.h"
-
 #include <vector>
 
 namespace llvm {

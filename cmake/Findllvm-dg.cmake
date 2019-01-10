@@ -10,7 +10,7 @@ find_package_handle_standard_args(llvm-dg
         )
 
 if(llvm-dg_FOUND)
-    find_package(LLVM 6.0 REQUIRED CONFIG)
+    find_package(LLVM 7.0 REQUIRED CONFIG)
     set(llvm-dg_INCLUDE_DIRS ${llvm-dg_INCLUDE_DIR})
 endif()
 

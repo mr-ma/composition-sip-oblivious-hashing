@@ -3,12 +3,12 @@ project(oblivious-hashing VERSION 0.1.0 LANGUAGES CXX)
 
 list(INSERT CMAKE_MODULE_PATH 0 ${CMAKE_SOURCE_DIR}/cmake)
 
-find_package(LLVM 6.0 REQUIRED CONFIG)
+find_package(LLVM 7.0 REQUIRED CONFIG)
 find_package(nlohmann_json REQUIRED)
 find_package(Boost REQUIRED)
 find_package(input-dependency REQUIRED COMPONENTS InputDependency)
 find_package(llvm-dg REQUIRED)
-find_package(self-checksumming REQUIRED)
+find_package(function-filter REQUIRED)
 find_package(composition-framework REQUIRED)
 
 add_library(oblivious-hashing MODULE
