@@ -43,6 +43,7 @@
 #include "composition/Manifest.hpp"
 #include "composition/graph/constraint/constraint.hpp"
 #include "composition/graph/constraint/dependency.hpp"
+#include "composition/graph/constraint/n_of.hpp"
 
 using namespace llvm;
 using namespace composition;
@@ -50,6 +51,8 @@ using namespace composition;
 namespace oh {
 
 namespace {
+
+std::unordered_map<llvm::Value *, std::vector<composition::Manifest *>> hashManifests{};
 
 bool checkTerminators(llvm::Module &M) {
   for (auto &F : M) {
@@ -368,6 +371,10 @@ void insertHashBuilder(llvm::IRBuilder<> &builder,
 
   auto *m = new Manifest(name, v, BB, patchFunction, constraints, false, undoValues);
   ManifestRegistry::Add(m);
+
+  if (isLocal) {
+    hashManifests[hash_value].push_back(m);
+  }
 }
 
 class FunctionExtractionHelper {
@@ -1422,6 +1429,9 @@ void ObliviousHashInsertionPass::doInsertAssert(llvm::Instruction &instr,
   if (short_range_assert) {
     constraints.push_back(std::make_shared<graph::constraint::Dependency>(name, *undoValues.begin(), hash_value));
     constraints.push_back(std::make_shared<graph::constraint::Dependency>(name, assertCall, *undoValues.begin()));
+
+    // Add NOf constraints to bundle hashes correctly
+    constraints.push_back(std::make_shared<graph::constraint::NOf>(name, 1, hashManifests[hash_value]));
   } else {
     constraints.push_back(std::make_shared<graph::constraint::Dependency>(name, assertCall, hash_value));
   }
@@ -1432,8 +1442,14 @@ void ObliviousHashInsertionPass::doInsertAssert(llvm::Instruction &instr,
 
   llvm::BasicBlock *BB = assertCall->getParent();
   assert(BB != nullptr);
-  auto
-      *m = new Manifest(name, nullptr, nullptr, patchFunction, constraints, true, undoValues, std::to_string(placeholder) + "\n");
+  auto *m = new Manifest(name,
+                         nullptr,
+                         nullptr,
+                         patchFunction,
+                         constraints,
+                         true,
+                         undoValues,
+                         std::to_string(placeholder) + "\n");
 
   addProtection(m);
 }
