@@ -366,7 +366,7 @@ void insertHashBuilder(llvm::IRBuilder<> &builder,
   llvm::BasicBlock *BB = call->getParent();
   assert(BB != nullptr);
 
-  auto *m = new Manifest(name, BB, BB, patchFunction, constraints, false, undoValues);
+  auto *m = new Manifest(name, v, BB, patchFunction, constraints, false, undoValues);
   ManifestRegistry::Add(m);
 }
 
@@ -1433,7 +1433,7 @@ void ObliviousHashInsertionPass::doInsertAssert(llvm::Instruction &instr,
   llvm::BasicBlock *BB = assertCall->getParent();
   assert(BB != nullptr);
   auto
-      *m = new Manifest(name, BB, BB, patchFunction, constraints, true, undoValues, std::to_string(placeholder) + "\n");
+      *m = new Manifest(name, nullptr, nullptr, patchFunction, constraints, true, undoValues, std::to_string(placeholder) + "\n");
 
   addProtection(m);
 }
