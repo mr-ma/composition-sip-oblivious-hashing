@@ -5,12 +5,6 @@
 
 #include <unordered_set>
 
-namespace llvm {
-class CallInst;
-class Constant;
-class LLVMContext;
-}
-
 namespace oh {
 
 class AssertionFinalizePass : public llvm::ModulePass {
@@ -30,6 +24,6 @@ private:
 private:
   using hash_value_set = std::unordered_set<uint64_t>;
   std::vector<hash_value_set> hashes;
-  llvm::Function *assert;
+  llvm::Function *assert{};
 };
 }

@@ -19,7 +19,7 @@ namespace {
 std::string demangle(const std::string &mangled_name) {
   int status = -1;
   char *demangled =
-      abi::__cxa_demangle(mangled_name.c_str(), NULL, NULL, &status);
+      abi::__cxa_demangle(mangled_name.c_str(), nullptr, nullptr, &status);
   if (status == 0) {
     return std::string(demangled);
   }
@@ -30,7 +30,7 @@ std::string demangle(const std::string &mangled_name) {
 }
 
 void extract_function_name(std::string &full_name) {
-  auto name_end = full_name.find_first_of("(");
+  auto name_end = full_name.find_first_of('(');
   if (name_end != std::string::npos) {
     full_name = full_name.substr(0, name_end);
   }
@@ -81,9 +81,11 @@ const AssertFunctionInformation::FunctionSet &
 AssertFunctionInformation::get_assert_functions() const {
   return m_assert_functions;
 }
+
 void AssertFunctionMarkPass::getAnalysisUsage(llvm::AnalysisUsage &AU) const {
   AU.setPreservesAll();
 }
+
 static llvm::cl::opt<std::string> InputFilename(
     "assert-functions",
     llvm::cl::desc("Specify input filename for Assert function mark pass"),
@@ -98,6 +100,7 @@ bool AssertFunctionMarkPass::runOnModule(llvm::Module &M) {
   }
   return false;
 }
+
 static llvm::RegisterPass<AssertFunctionMarkPass>
     X("mark-functions", "Marks functions in a given file as assert functions");
 } // namespace oh

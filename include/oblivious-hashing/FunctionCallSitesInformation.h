@@ -1,89 +1,76 @@
 #pragma once
 
-#include "llvm/Pass.h"
-
-#include "input-dependency/Analysis/InputDependencyAnalysisPass.h"
-
+#include <llvm/Pass.h>
+#include <input-dependency/Analysis/InputDependencyAnalysisPass.h>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
 #include <functional>
-
-namespace llvm {
-class Function;
-class LoopInfo;
-class CallGraph;
-}
-
-namespace input_dependency {
-class IndirectCallSitesAnalysisResult;
-class VirtualCallSiteAnalysisResult;
-}
+#include <llvm/Analysis/LoopInfo.h>
+#include <llvm/Analysis/CallGraph.h>
+#include <input-dependency/Analysis/IndirectCallSitesAnalysis.h>
 
 namespace oh {
 
 /// Collects call site data for input independent functions.
-class FunctionCallSiteData
-{
+class FunctionCallSiteData {
 private:
-    using InputDependencyAnalysisType = input_dependency::InputDependencyAnalysisPass::InputDependencyAnalysisType;
-    using IndirectCallSitesAnalysisResult = input_dependency::IndirectCallSitesAnalysisResult;
-    using VirtualCallSiteAnalysisResult = input_dependency::VirtualCallSiteAnalysisResult;
+  using InputDependencyAnalysisType = input_dependency::InputDependencyAnalysisPass::InputDependencyAnalysisType;
+  using IndirectCallSitesAnalysisResult = input_dependency::IndirectCallSitesAnalysisResult;
+  using VirtualCallSiteAnalysisResult = input_dependency::VirtualCallSiteAnalysisResult;
 
 public:
-    using LoopInfoGetter = std::function<llvm::LoopInfo* (llvm::Function& )>;
+  using LoopInfoGetter = std::function<llvm::LoopInfo *(llvm::Function &)>;
 
 public:
-    FunctionCallSiteData() = default;
+  FunctionCallSiteData() = default;
 
-    void setCallGraph(llvm::CallGraph* callGraph);
-    void setLoopInfoGetter(const LoopInfoGetter& loopInfoGetter);
-    void setInputDepInfo(const InputDependencyAnalysisType& inputDep);
-    void setIndirectCallSiteInfo(const IndirectCallSitesAnalysisResult* indirectCalls);
-    void setVirtualCallSiteInfo(const VirtualCallSiteAnalysisResult* virtualCalls);
+  void setCallGraph(llvm::CallGraph *callGraph);
+  void setLoopInfoGetter(const LoopInfoGetter &loopInfoGetter);
+  void setInputDepInfo(const InputDependencyAnalysisType &inputDep);
+  void setIndirectCallSiteInfo(const input_dependency::IndirectCallSitesAnalysisResult *indirectCalls);
+  void setVirtualCallSiteInfo(const input_dependency::VirtualCallSiteAnalysisResult *virtualCalls);
 
-    bool isFunctionCalledInLoop(llvm::Function* F) const;
-    unsigned getNumberOfFunctionCallSites(llvm::Function* F) const;
+  bool isFunctionCalledInLoop(llvm::Function *F) const;
+  unsigned getNumberOfFunctionCallSites(llvm::Function *F) const;
 
-    void gatherCallSiteData(llvm::Module& M);
-
-private:
-    std::vector<llvm::Function*> get_functions_in_top_down_order(const llvm::Module& M);
-    void process_function(llvm::Function* F);
-    template <class T>
-    std::vector<llvm::Function*> get_call_targets(T* instruction);
-
-    void dump();
+  void gatherCallSiteData(llvm::Module &M);
 
 private:
-    llvm::CallGraph* m_callGraph;
-    LoopInfoGetter m_loopInfoGetter;
-    InputDependencyAnalysisType m_inputDepRes;
-    const input_dependency::IndirectCallSitesAnalysisResult* m_indirectCalls;
-    const input_dependency::VirtualCallSiteAnalysisResult* m_virtualCalls;
+  std::vector<llvm::Function *> get_functions_in_top_down_order(const llvm::Module &M);
+  void process_function(llvm::Function *F);
+  template<class T>
+  std::vector<llvm::Function *> get_call_targets(T *instruction);
 
-    std::unordered_set<llvm::Function*> m_functionsCalledInLoop;
-    std::unordered_map<llvm::Function*, unsigned> m_functionCallSiteNumbers;
+  void dump();
+
+private:
+  llvm::CallGraph *m_callGraph{};
+  LoopInfoGetter m_loopInfoGetter;
+  InputDependencyAnalysisType m_inputDepRes;
+  const input_dependency::IndirectCallSitesAnalysisResult *m_indirectCalls{};
+  const input_dependency::VirtualCallSiteAnalysisResult *m_virtualCalls{};
+
+  std::unordered_set<llvm::Function *> m_functionsCalledInLoop;
+  std::unordered_map<llvm::Function *, unsigned> m_functionCallSiteNumbers;
 };
 
-class FunctionCallSiteInformationPass : public llvm::ModulePass
-{
+class FunctionCallSiteInformationPass : public llvm::ModulePass {
 public:
-    static char ID;
+  static char ID;
 
-    FunctionCallSiteInformationPass()
-        : llvm::ModulePass(ID)
-    {
-    }
+  FunctionCallSiteInformationPass()
+      : llvm::ModulePass(ID) {
+  }
 
 public:
-    bool runOnModule(llvm::Module &M) override;
-    void getAnalysisUsage(llvm::AnalysisUsage &AU) const override;
+  bool runOnModule(llvm::Module &M) override;
+  void getAnalysisUsage(llvm::AnalysisUsage &AU) const override;
 
-    const FunctionCallSiteData& getAnalysisResult() const;
+  const FunctionCallSiteData &getAnalysisResult() const;
 
 private:
-    FunctionCallSiteData m_callSiteData;
+  FunctionCallSiteData m_callSiteData;
 };
 
 }

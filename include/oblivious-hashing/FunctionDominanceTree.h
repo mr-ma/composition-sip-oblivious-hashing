@@ -1,15 +1,9 @@
 #pragma once
 
 #include "llvm/Pass.h"
-
 #include <memory>
 #include <unordered_map>
 #include <unordered_set>
-
-namespace llvm {
-class Function;
-class Module;
-}
 
 namespace oh {
 

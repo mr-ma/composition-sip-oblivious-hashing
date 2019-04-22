@@ -9,33 +9,17 @@
 #include "input-dependency/Analysis/InputDependencyAnalysisPass.h"
 #include "llvm/IR/IRBuilder.h"
 #include "llvm/Pass.h"
+#include "FunctionCallSitesInformation.h"
 #include <functional>
 #include <set>
 #include <vector>
-
-namespace llvm {
-class AAResults;
-class BasicBlock;
-class CallInst;
-class CmpInst;
-class Constant;
-class GetElementPtrInst;
-class GlobalVariable;
-class Instruction;
-class Value;
-class LoopInfo;
-class Loop;
-class MDNode;
-} // namespace llvm
+#include <llvm/Analysis/LoopInfo.h>
 
 namespace oh {
 
-class FunctionCallSiteData;
-class OHPath;
-
 class ObliviousHashInsertionPass
     : public composition::support::ComposableAnalysis<
-          ObliviousHashInsertionPass> {
+        ObliviousHashInsertionPass> {
 private:
   using BasicBlocksSet = std::unordered_set<llvm::BasicBlock *>;
   using InstructionSet = std::unordered_set<llvm::Instruction *>;
@@ -63,7 +47,7 @@ public:
   ObliviousHashInsertionPass() = default;
 
   bool runOnModule(llvm::Module &M) override;
-  virtual void getAnalysisUsage(llvm::AnalysisUsage &AU) const override;
+  void getAnalysisUsage(llvm::AnalysisUsage &AU) const override;
   bool doFinalization(llvm::Module &module) override;
   void finalizeComposition() override;
 
@@ -80,9 +64,9 @@ private:
   bool process_function_with_global_oh(llvm::Function *F);
   void insert_calls_for_path_functions();
   bool process_path(llvm::Function *F, FunctionOHPaths::OHPath &path,
-                    const unsigned path_num);
+                    unsigned path_num);
   bool process_path(llvm::Function *F, short_range_path_oh &oh_path,
-                    const unsigned path_num);
+                    unsigned path_num);
   bool process_deterministic_part_of_path(llvm::Function *F,
                                           short_range_path_oh &oh_path);
   std::pair<llvm::Instruction *, llvm::Instruction *>
@@ -95,9 +79,9 @@ private:
       llvm::Function *F, const FunctionOHPaths::OHPath &path);
   void update_statistics_with_non_dg_function(llvm::Function *F);
   void update_statistics(const FunctionOHPaths::OHPath &path,
-                         llvm::Loop *path_loop, const bool is_data_dep_loop,
-                         const bool is_arg_reachable_loop,
-                         const bool is_glob_reachable_loop,
+                         llvm::Loop *path_loop, bool is_data_dep_loop,
+                         bool is_arg_reachable_loop,
+                         bool is_glob_reachable_loop,
                          const TraverseBlockPred &traverse_block);
   InstructionSet collect_loop_invariants(llvm::Function *F, llvm::Loop *loop,
                                          const FunctionOHPaths::OHPath &path);
@@ -154,7 +138,7 @@ private:
                       bool is_local_hash);
   bool instrumentBranchInst(llvm::BranchInst *branchInst,
                             llvm::Value *hash_to_update, bool is_local_hash);
-  template <class CallInstTy>
+  template<class CallInstTy>
   bool instrumentCallInst(CallInstTy *call, int &protectedArguments,
                           llvm::Value *hash_value, bool isLocal);
   bool instrumentGetElementPtrInst(llvm::GetElementPtrInst *getElemPtr,
@@ -176,29 +160,29 @@ public:
   static const std::string oh_hash2_name;
 
 private:
-  llvm::Module *m_M;
+  llvm::Module *m_M{};
   OHStats stats;
-  llvm::AAResults *m_AAR;
+  llvm::AAResults *m_AAR{};
   using InputDependencyAnalysisType = input_dependency::
-      InputDependencyAnalysisPass::InputDependencyAnalysisType;
+  InputDependencyAnalysisPass::InputDependencyAnalysisType;
   InputDependencyAnalysisType m_input_dependency_info;
   std::unordered_set<llvm::Function *> m_mainReachableFunctions;
-  FunctionInformation *m_function_mark_info;
-  FunctionInformation *m_function_filter_info;
-  const FunctionCallSiteData *m_function_callsite_data;
+  FunctionInformation *m_function_mark_info{};
+  FunctionInformation *m_function_filter_info{};
+  const FunctionCallSiteData *m_function_callsite_data{};
   std::unique_ptr<Slicer> m_slicer;
 
-  bool m_hashUpdated;
-  bool hasTagsToSkip;
-  unsigned guardMetadataKindID;
-  unsigned assertCnt;
+  bool m_hashUpdated{};
+  bool hasTagsToSkip{};
+  unsigned guardMetadataKindID{};
+  unsigned assertCnt{};
   std::vector<std::string> skipTags;
-  llvm::Function *hashFunc1;
-  llvm::Function *hashFunc2;
-  llvm::Function *assert;
-  llvm::MDNode *assert_metadata;
+  llvm::Function *hashFunc1{};
+  llvm::Function *hashFunc2{};
+  llvm::Function *assert{};
+  llvm::MDNode *assert_metadata{};
   std::vector<llvm::GlobalVariable *> hashPtrs;
-  llvm::GlobalVariable *TempVariable;
+  llvm::GlobalVariable *TempVariable{};
   std::vector<unsigned> usedHashIndices;
   BasicBlocksSet m_processed_deterministic_blocks;
 

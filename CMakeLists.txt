@@ -16,11 +16,9 @@ add_library(oblivious-hashing MODULE
         include/oblivious-hashing/AssertionFinalizePass.h
         include/oblivious-hashing/AssertionInsertionPass.h
         include/oblivious-hashing/FunctionCallSitesInformation.h
-        include/oblivious-hashing/FunctionDominanceTree.h
         include/oblivious-hashing/FunctionOHPaths.h
         include/oblivious-hashing/MemoryDefinitionData.h
         include/oblivious-hashing/ObliviousHashInsertion.h
-        include/oblivious-hashing/OHRunner.h
         include/oblivious-hashing/Slicer.h
         include/oblivious-hashing/Stats.h
         include/oblivious-hashing/Utils.h

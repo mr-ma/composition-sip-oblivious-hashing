@@ -127,9 +127,9 @@ void AssertionFinalizePass::process_log_call(llvm::CallInst *log_call) {
     }
     llvm::dbgs() << "end dumping call operands\n";
     llvm::dbgs() << "begin dumping arg list\n";
-    for (unsigned i = 0; i < arg_values.size(); i++) {
+    for (auto &arg_value : arg_values) {
       // llvm::dbgs()<<"Value is here:"<<arg_values[i]<<"\n";
-      arg_values[i]->print(llvm::dbgs(), true);
+      arg_value->print(llvm::dbgs(), true);
       llvm::dbgs() << "\n";
     }
     llvm::dbgs() << "end dumping call operands\n";

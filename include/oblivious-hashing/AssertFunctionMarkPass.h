@@ -4,10 +4,6 @@
 
 #include <unordered_set>
 
-namespace llvm {
-class Function;
-}
-
 namespace oh {
 
 class AssertFunctionInformation {
@@ -40,7 +36,8 @@ public:
 
 public:
   bool runOnModule(llvm::Module &M) override;
-  virtual void getAnalysisUsage(llvm::AnalysisUsage &AU) const override;
+  void getAnalysisUsage(llvm::AnalysisUsage &AU) const override;
+
   const AssertFunctionInformation &get_assert_functions_info() const {
     return m_assert_functions_info;
   }
