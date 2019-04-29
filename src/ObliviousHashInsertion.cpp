@@ -67,7 +67,9 @@ bool isReachablePath(Instruction *insSource, Instruction *insTarget) {
   llvm::Function *source = insSource->getFunction();
   llvm::Function *target = insTarget->getFunction();
 
-  if (source == target) {
+  if (source->hasAddressTaken()) {
+    return true;
+  } else if (source == target) {
     // Check if the hash can reach the assert
     bool reachability = llvm::isPotentiallyReachable(insSource, insTarget, nullptr, nullptr);
     if (reachability) {
