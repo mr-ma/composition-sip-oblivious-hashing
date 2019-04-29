@@ -36,6 +36,7 @@
 #include <iterator>
 #include <sstream>
 #include <string>
+#include <llvm/Analysis/CFG.h>
 #include "function-filter/Filter.hpp"
 #include "function-filter/Marker.hpp"
 #include "input-dependency/Analysis/FunctionInputDependencyResultInterface.h"
@@ -44,6 +45,8 @@
 #include "composition/graph/constraint/constraint.hpp"
 #include "composition/graph/constraint/dependency.hpp"
 #include "composition/graph/constraint/n_of.hpp"
+#include <unordered_map>
+#include <unordered_set>
 
 using namespace llvm;
 using namespace composition;
@@ -53,6 +56,64 @@ namespace oh {
 namespace {
 
 std::unordered_map<llvm::Value *, std::vector<composition::Manifest *>> hashManifests{};
+std::unordered_map<llvm::Value *, std::vector<std::pair<llvm::Instruction *, composition::Manifest *>>>
+    globalHashManifests{};
+std::unordered_map<llvm::Instruction *, llvm::Value *> assertGlobalVariable{};
+std::unordered_map<llvm::Instruction *, Manifest *> assertManifests{};
+std::unordered_map<llvm::Function *, std::unordered_set<llvm::Function *>> calledFunctions{};
+
+bool isReachablePath(Instruction *insSource, Instruction *insTarget) {
+  // Check if there is a path from source to target
+  llvm::Function *source = insSource->getFunction();
+  llvm::Function *target = insTarget->getFunction();
+
+  if (source == target) {
+    // Check if the hash can reach the assert
+    bool reachability = llvm::isPotentiallyReachable(insSource, insTarget, nullptr, nullptr);
+    if (reachability) {
+      return true;
+    }
+  } else {
+    // Initialize empty visited and frontier
+    std::unordered_set<llvm::Function *> visited{};
+    std::queue<llvm::Function *> frontier{};
+
+    // Start with the source node
+    frontier.push(source);
+
+    while (!frontier.empty()) {
+      // Get top element
+      auto F = frontier.front();
+      frontier.pop();
+
+      // Do not process functions twice
+      if (visited.find(F) != visited.end()) {
+        continue;
+      }
+      visited.insert(F);
+
+      // If F matches target, then we have found a path
+      if (F == target) {
+        return true;
+      }
+
+      // Otherwise, have a look at the call graph and add F's CallSites.
+      auto it = calledFunctions.find(F);
+      if (it == calledFunctions.end()) {
+        // Function is unreachable - skip
+        continue;
+      }
+
+      for (auto innerF : it->second) {
+        // Only add CallSites we have not visited
+        if (visited.find(innerF) == visited.end()) {
+          frontier.push(innerF);
+        }
+      }
+    }
+  }
+  return false;
+}
 
 bool checkTerminators(llvm::Module &M) {
   for (auto &F : M) {
@@ -374,6 +435,8 @@ void insertHashBuilder(llvm::IRBuilder<> &builder,
 
   if (isLocal) {
     hashManifests[hash_value].push_back(m);
+  } else {
+    globalHashManifests[hash_value].push_back({call, m});
   }
 }
 
@@ -1451,7 +1514,12 @@ void ObliviousHashInsertionPass::doInsertAssert(llvm::Instruction &instr,
                          undoValues,
                          std::to_string(placeholder) + "\n");
 
-  addProtection(m);
+  if (short_range_assert) {
+    addProtection(m);
+  } else {
+    assertGlobalVariable[assertCall] = hash_value;
+    assertManifests[assertCall] = m;
+  }
 }
 
 void ObliviousHashInsertionPass::setup_guardMe_metadata() {
@@ -2741,6 +2809,37 @@ bool ObliviousHashInsertionPass::runOnModule(llvm::Module &M) {
   //        }
   //    }
   //}
+
+  std::unordered_set<llvm::Function *> visited{};
+  std::queue<llvm::Function *> frontier{};
+  for (auto &F : M) {
+    if (F.getName() == "main") {
+      frontier.push(&F);
+    }
+  }
+
+  while (!frontier.empty()) {
+    llvm::Function *F = frontier.front();
+    frontier.pop();
+
+    if (visited.find(F) != visited.end()) {
+      continue;
+    }
+
+    visited.insert(F);
+
+    for (auto &BB : *F) {
+      for (auto &I : BB) {
+        if (auto call = dyn_cast<llvm::CallInst>(&I)) {
+          Function *CalledFunction = call->getCalledFunction();
+          if (visited.find(CalledFunction) == visited.end()) {
+            calledFunctions[F].insert(CalledFunction);
+          }
+        }
+      }
+    }
+  }
+
   int countProcessedFuncs = 0;
   m_hashUpdated = false;
   for (auto &F : M) {
@@ -2756,6 +2855,7 @@ bool ObliviousHashInsertionPass::runOnModule(llvm::Module &M) {
     }
   }
 
+  finalizeAssertManifests();
   //if (!checkTerminators(M)) {
   //    exit(1);
   //}
@@ -2771,6 +2871,27 @@ bool ObliviousHashInsertionPass::runOnModule(llvm::Module &M) {
                  << m_function_filter_info->get_functions().size() << "\n";
   }
   return modified;
+}
+
+void ObliviousHashInsertionPass::finalizeAssertManifests() {
+  for (auto[assertCall, manifest] : assertManifests) {
+    auto hash_value = assertGlobalVariable.at(assertCall);
+    // Add NOf constraints to bundle hashes correctly
+    auto candidates = globalHashManifests[hash_value];
+
+    std::vector<Manifest *> result{};
+
+    for (auto c : candidates) {
+      // If there is a path, then the hash manifest qualifies
+      if (isReachablePath(c.first, assertCall)) {
+        result.push_back(c.second);
+      }
+    }
+
+    manifest->constraints.push_back(std::make_shared<graph::constraint::NOf>("oh_assert", 1, result));
+    addProtection(manifest);
+  }
+
 }
 
 void ObliviousHashInsertionPass::finalizeComposition() {

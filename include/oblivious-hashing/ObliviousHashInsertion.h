@@ -153,6 +153,8 @@ private:
   bool hasSkipTag(llvm::Instruction &I);
   bool isInstAGuard(llvm::Instruction &I);
 
+  void finalizeAssertManifests();
+
 public:
   static const std::string oh_path_functions_callee;
   static const std::string oh_path_calls;
