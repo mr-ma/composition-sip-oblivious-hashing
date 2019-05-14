@@ -24,8 +24,8 @@ def match_placeholders(console_reads):
 def patch_binary(orig_name, new_name, args):
     expected_hashes = {}
 
-    ldpreload = ["/home/dennis/Desktop/sip/self-checksumming/hook/build/libminm.so",
-                 "/home/dennis/Desktop/sip/composition-framework/build/librtlib.so"]
+    ldpreload = ["/home/sip/self-checksumming/hook/build/libminm.so",
+                 "/home/sip/composition-framework/build/librtlib.so"]
     env = os.environ.copy()
     env['LD_PRELOAD'] = ":".join(ldpreload)
     cmd = [orig_name]
