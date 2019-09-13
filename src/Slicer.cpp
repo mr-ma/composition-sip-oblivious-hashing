@@ -57,6 +57,7 @@ bool Slicer::slice(llvm::Function *F, const std::string &criteria) {
 }
 
 void Slicer::computeEdges() {
+  llvm::dbgs()<<"Slicer::computeEdges()\n";
   m_RD->run<dg::analysis::rd::ReachingDefinitionsAnalysis>();
 
   dg::LLVMDefUseAnalysis DUA(m_dg.get(), m_RD.get(),
@@ -66,8 +67,11 @@ void Slicer::computeEdges() {
 }
 
 void Slicer::buildDG() {
+  llvm::dbgs()<<"Slicer::buildDG()\n";
   m_PTA->run<dg::analysis::pta::PointsToFlowInsensitive>();
+  llvm::dbgs()<<"Slicer::buildDG()->PointsToFlowInsensitive\n";
   m_dg->build(m_module, m_PTA.get());
+  llvm::dbgs()<<"Slicer::buildDG()->m_dg->build\n";
 }
 
 void Slicer::computeSlice(llvm::Function *F) {

@@ -24,8 +24,8 @@ def match_placeholders(console_reads):
 def patch_binary(orig_name, new_name, args):
     expected_hashes = {}
 
-    ldpreload = ["/home/dennis/Desktop/self-checksumming/hook/build/libminm.so",
-                 "/home/dennis/Desktop/composition-framework/release/librtlib.so"]
+    ldpreload = ["/home/sip/self-checksumming/hook/build/libminm.so",
+                 "/home/sip/composition-framework/build/librtlib.so"]
     env = os.environ.copy()
     env['LD_PRELOAD'] = ":".join(ldpreload)
     cmd = [orig_name]
@@ -82,9 +82,11 @@ def patch_address(mm, addr, patch_value):
 
 
 def patch_placeholders(filename, placeholders, debug):
-    print("patching placeholders")
     with open(filename, 'r+b') as f:
+        print("openned file")
         mm = mmap.mmap(f.fileno(), 0)
+        if debug:
+            print("Placeholders size:", len(placeholders))
         patch_count = 0
         for placeholder in placeholders:
             expected_hash = placeholders[placeholder]
@@ -167,8 +169,11 @@ def main():
                         default='')
 
     results = parser.parse_args()
+    print("Debug messages is set to:", results.debug)
     placeholders = patch_binary(results.binary, results.new_binary, results.args.strip("\""))
-
+    if results.debug:
+        print("placeholders:")
+        print(placeholders)
     if len(results.placeholders) > 0:
         with open(results.placeholders) as f:
             patch_info = [line.rstrip('\n') for line in f]
@@ -176,11 +181,13 @@ def main():
         result = {}
         import pprint
         pprint.pprint(placeholders)
+        pprint.pprint(patch_info)
         for t in patch_info:
             if t in placeholders:
                 result[t] = placeholders[t]
 
-        placeholders = result
+        if len(result) == len(placeholders):
+          placeholders = result
 
     count_patched = patch_placeholders(results.new_binary, placeholders, results.debug)
     print("Patched:", count_patched, " in ", results.new_binary, " saved as:", results.new_binary)
