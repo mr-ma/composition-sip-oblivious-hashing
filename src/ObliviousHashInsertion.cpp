@@ -2750,7 +2750,7 @@ bool ObliviousHashInsertionPass::runOnModule(llvm::Module &M) {
   // Make sure OH only processed filter function list
   if (countProcessedFuncs != m_function_filter_info->get_functions().size()
       && !m_function_filter_info->get_functions().empty()) {
-    llvm::errs() << "ERR. processed " << countProcessedFuncs
+    llvm::errs() << "OH ERR. processed " << countProcessedFuncs
                  << " function, while filter count is "
                  << m_function_filter_info->get_functions().size() << "\n";
   }
