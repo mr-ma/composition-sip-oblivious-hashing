@@ -1445,6 +1445,11 @@ void ObliviousHashInsertionPass::insertAssert(llvm::Instruction &I,
     doInsertAssert(I, hash_to_assert, false, assert_F);
   }
 }
+ void setMetadata(LLVMContext &ctx, Instruction *inst, std::string metadataStr){
+    auto* guard_md_str = llvm::MDString::get(ctx,metadataStr);
+    MDNode* guard_md = llvm::MDNode::get(ctx,guard_md_str);
+    inst->setMetadata(metadataStr, guard_md);
+}
 
 void ObliviousHashInsertionPass::doInsertAssert(llvm::Instruction &instr,
                                                 llvm::Value *hash_value,
@@ -1476,6 +1481,7 @@ void ObliviousHashInsertionPass::doInsertAssert(llvm::Instruction &instr,
 
   auto *assertCall = builder.CreateCall(assert_F, args);
   assertCall->setMetadata("oh_assert", assert_metadata);
+  setMetadata(Ctx,assertCall,  "oh_verify");
 
   std::string name;
   if (short_range_assert) {
