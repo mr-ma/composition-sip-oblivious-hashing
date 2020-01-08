@@ -31,8 +31,8 @@ bool OHRunner::skipFunction(llvm::Function &F) const {
     return true;
   }
   // no hashes for functions called from non deterministc blocks
-  if (F_input_dependency_info->isInputDepFunction() &&
-      !F_input_dependency_info->isExtractedFunction()) {
+  if (F_input_dependency_info->isInputDepFunction() /*&&
+      !F_input_dependency_info->isExtractedFunction()*/) {
     llvm::dbgs() << "Function " << F.getName() << " is input dependent. Skip\n";
     return true;
   }

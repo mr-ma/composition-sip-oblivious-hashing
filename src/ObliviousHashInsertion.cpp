@@ -1608,9 +1608,9 @@ bool ObliviousHashInsertionPass::skip_function(llvm::Function &F, bool update_st
   if (F.isDeclaration() || F.isIntrinsic()) {
     return true;
   }
-  if (F.getMetadata("extracted")) {
+  /*if (F.getMetadata("extracted")) {
     return true;
-  }
+  }*/
   if (excludeMainUnreachables) {
     if (mainReachablesCached) {
       if (m_M->getModuleFlag("main_reachables_cached")) {
@@ -1656,7 +1656,7 @@ bool ObliviousHashInsertionPass::skip_function(llvm::Function &F, bool update_st
       return true;
     }
   }
-  return F_input_dependency_info->isExtractedFunction();
+  return false;//F_input_dependency_info->isExtractedFunction();
 }
 
 bool ObliviousHashInsertionPass::process_function(llvm::Function *F) {
