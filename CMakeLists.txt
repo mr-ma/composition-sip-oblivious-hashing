@@ -12,9 +12,9 @@ find_package(function-filter REQUIRED)
 find_package(composition-framework REQUIRED)
 
 add_library(oblivious-hashing MODULE
-        include/oblivious-hashing/AssertFunctionMarkPass.h
-        include/oblivious-hashing/AssertionFinalizePass.h
-        include/oblivious-hashing/AssertionInsertionPass.h
+	#include/oblivious-hashing/AssertFunctionMarkPass.h
+	#include/oblivious-hashing/AssertionFinalizePass.h
+	#include/oblivious-hashing/AssertionInsertionPass.h
         include/oblivious-hashing/FunctionCallSitesInformation.h
         include/oblivious-hashing/FunctionOHPaths.h
         include/oblivious-hashing/MemoryDefinitionData.h
@@ -23,9 +23,9 @@ add_library(oblivious-hashing MODULE
         include/oblivious-hashing/Stats.h
         include/oblivious-hashing/Utils.h
 
-        src/AssertFunctionMarkPass.cpp
-        src/AssertionFinalizePass.cpp
-        src/AssertionInsertionPass.cpp
+	#src/AssertFunctionMarkPass.cpp
+	#src/AssertionFinalizePass.cpp
+	#src/AssertionInsertionPass.cpp
         src/FunctionCallSitesInformation.cpp
         src/FunctionOHPaths.cpp
         src/MemoryDefinitionData.cpp
