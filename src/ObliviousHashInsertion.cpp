@@ -1608,9 +1608,12 @@ bool ObliviousHashInsertionPass::skip_function(llvm::Function &F, bool update_st
   if (F.isDeclaration() || F.isIntrinsic()) {
     return true;
   }
-  /*if (F.getMetadata("extracted")) {
+  if(F.getName()=="dummyFunc"){
     return true;
-  }*/
+  }
+  //if (F.getMetadata("extracted")) {
+  //  return true;
+  //}
   if (excludeMainUnreachables) {
     if (mainReachablesCached) {
       if (m_M->getModuleFlag("main_reachables_cached")) {
